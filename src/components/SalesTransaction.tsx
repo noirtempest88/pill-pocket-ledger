@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ShoppingCart, Printer, Plus, Minus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -240,7 +239,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
         </head>
         <body>
           <div class="header">
-            <div style="font-weight: bold;">PharmaCare</div>
+            <div style="font-weight: bold;">Selokgondang Pharmacy</div>
             <div>Receipt #${transaction.id}</div>
             <div>${transaction.date.toLocaleString()}</div>
             ${transaction.customerName ? `<div>Customer: ${transaction.customerName}</div>` : ''}

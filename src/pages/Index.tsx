@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import InventoryManagement, { Drug } from '@/components/InventoryManagement';
@@ -88,7 +87,7 @@ const Index = () => {
               <span className="text-blue-600 text-2xl font-bold">Rx</span>
             </div>
             <div>
-              <h1 className="text-3xl font-bold">PharmaCare Management System</h1>
+              <h1 className="text-3xl font-bold">Selokgondang Pharmacy</h1>
               <p className="text-blue-100">Complete pharmacy management solution</p>
             </div>
           </div>
@@ -103,7 +102,7 @@ const Index = () => {
 
       <footer className="bg-gray-800 text-white py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p>&copy; 2024 PharmaCare Management System. All rights reserved.</p>
+          <p>&copy; 2024 Selokgondang Pharmacy. All rights reserved.</p>
           <p className="text-gray-400 mt-2">Professional pharmacy management made simple</p>
         </div>
       </footer>
