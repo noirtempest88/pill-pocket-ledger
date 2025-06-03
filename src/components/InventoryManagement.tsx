@@ -8,11 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export interface Drug {
   id: string;
   name: string;
-  product: string;
+  packagingUnit: string;
+  initialStock: number;
+  receipt: number;
+  inventory: number;
+  expiredDamaged: number;
+  stockAmount: number;
+  factoryManufacturer: string;
   basePrice: number;
   netPrice: number;
   finalPrice: number;
-  stock: number;
   category: string;
 }
 
@@ -27,9 +32,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
   const [editingDrug, setEditingDrug] = useState<Drug | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    product: '',
+    packagingUnit: '',
+    initialStock: '',
+    receipt: '',
+    inventory: '',
+    expiredDamaged: '',
+    factoryManufacturer: '',
     basePrice: '',
-    stock: '',
     category: ''
   });
 
@@ -41,9 +50,14 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     return { netPrice, finalPrice };
   };
 
+  const calculateStockAmount = (initialStock: number, receipt: number, inventory: number, expiredDamaged: number) => {
+    return initialStock + receipt - inventory - expiredDamaged;
+  };
+
   const filteredDrugs = drugs.filter(drug =>
     drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    drug.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    drug.packagingUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    drug.factoryManufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     drug.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -51,15 +65,25 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     e.preventDefault();
     const basePrice = parseFloat(formData.basePrice);
     const { netPrice, finalPrice } = calculatePrices(basePrice);
+    const initialStock = parseInt(formData.initialStock);
+    const receipt = parseInt(formData.receipt);
+    const inventory = parseInt(formData.inventory);
+    const expiredDamaged = parseInt(formData.expiredDamaged);
+    const stockAmount = calculateStockAmount(initialStock, receipt, inventory, expiredDamaged);
     
     const drugData = {
       id: editingDrug?.id || Date.now().toString(),
       name: formData.name,
-      product: formData.product,
+      packagingUnit: formData.packagingUnit,
+      initialStock,
+      receipt,
+      inventory,
+      expiredDamaged,
+      stockAmount,
+      factoryManufacturer: formData.factoryManufacturer,
       basePrice,
       netPrice,
       finalPrice,
-      stock: parseInt(formData.stock),
       category: formData.category
     };
 
@@ -70,7 +94,17 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
       setDrugs([...drugs, drugData]);
     }
 
-    setFormData({ name: '', product: '', basePrice: '', stock: '', category: '' });
+    setFormData({ 
+      name: '', 
+      packagingUnit: '', 
+      initialStock: '', 
+      receipt: '', 
+      inventory: '', 
+      expiredDamaged: '', 
+      factoryManufacturer: '', 
+      basePrice: '', 
+      category: '' 
+    });
     setShowAddForm(false);
   };
 
@@ -78,9 +112,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     setEditingDrug(drug);
     setFormData({
       name: drug.name,
-      product: drug.product,
+      packagingUnit: drug.packagingUnit,
+      initialStock: drug.initialStock.toString(),
+      receipt: drug.receipt.toString(),
+      inventory: drug.inventory.toString(),
+      expiredDamaged: drug.expiredDamaged.toString(),
+      factoryManufacturer: drug.factoryManufacturer,
       basePrice: drug.basePrice.toString(),
-      stock: drug.stock.toString(),
       category: drug.category
     });
     setShowAddForm(true);
@@ -116,7 +154,7 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
             <CardTitle>{editingDrug ? 'Edit Drug' : 'Add New Drug'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 placeholder="Drug Name"
                 value={formData.name}
@@ -124,9 +162,43 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 required
               />
               <Input
-                placeholder="Product"
-                value={formData.product}
-                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                placeholder="Packaging Unit"
+                value={formData.packagingUnit}
+                onChange={(e) => setFormData({ ...formData, packagingUnit: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Initial Stock"
+                type="number"
+                value={formData.initialStock}
+                onChange={(e) => setFormData({ ...formData, initialStock: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Receipt"
+                type="number"
+                value={formData.receipt}
+                onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Inventory"
+                type="number"
+                value={formData.inventory}
+                onChange={(e) => setFormData({ ...formData, inventory: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Expired/Damaged"
+                type="number"
+                value={formData.expiredDamaged}
+                onChange={(e) => setFormData({ ...formData, expiredDamaged: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Factory Manufacturer"
+                value={formData.factoryManufacturer}
+                onChange={(e) => setFormData({ ...formData, factoryManufacturer: e.target.value })}
                 required
               />
               <Input
@@ -138,19 +210,12 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 required
               />
               <Input
-                placeholder="Stock Quantity"
-                type="number"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                required
-              />
-              <Input
                 placeholder="Category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
               />
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 col-span-full">
                 <Button type="submit" className="bg-green-600 hover:bg-green-700">
                   {editingDrug ? 'Update' : 'Add'} Drug
                 </Button>
@@ -160,7 +225,17 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingDrug(null);
-                    setFormData({ name: '', product: '', basePrice: '', stock: '', category: '' });
+                    setFormData({ 
+                      name: '', 
+                      packagingUnit: '', 
+                      initialStock: '', 
+                      receipt: '', 
+                      inventory: '', 
+                      expiredDamaged: '', 
+                      factoryManufacturer: '', 
+                      basePrice: '', 
+                      category: '' 
+                    });
                   }}
                 >
                   Cancel
@@ -174,30 +249,38 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drug Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price + Net</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price + Net + Tax</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drug Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packaging Unit</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initial Stock</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expired/Damaged</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Price</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net + Tax</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredDrugs.map((drug) => (
                   <tr key={drug.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{drug.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{drug.product}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.basePrice.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.netPrice.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${drug.finalPrice.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{drug.stock}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{drug.category}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{drug.name}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.packagingUnit}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.initialStock}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.receipt}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.inventory}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.expiredDamaged}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.stockAmount}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.factoryManufacturer}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.basePrice.toFixed(2)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.netPrice.toFixed(2)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.finalPrice.toFixed(2)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(drug)}>
                           <Edit size={16} />

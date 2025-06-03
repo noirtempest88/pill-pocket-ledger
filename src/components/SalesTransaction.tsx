@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShoppingCart, Printer, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Printer, Plus, Minus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +30,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
   const [cart, setCart] = useState<{ drug: Drug; quantity: number }[]>([]);
   const [selectedDrugId, setSelectedDrugId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const addToCart = () => {
     const drug = drugs.find(d => d.id === selectedDrugId);
@@ -39,7 +40,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
     if (existingItem) {
       setCart(cart.map(item => 
         item.drug.id === drug.id 
-          ? { ...item, quantity: Math.min(item.quantity + 1, drug.stock) }
+          ? { ...item, quantity: Math.min(item.quantity + 1, drug.stockAmount) }
           : item
       ));
     } else {
@@ -54,7 +55,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
 
     if (newQuantity <= 0) {
       setCart(cart.filter(item => item.drug.id !== drugId));
-    } else if (newQuantity <= drug.stock) {
+    } else if (newQuantity <= drug.stockAmount) {
       setCart(cart.map(item => 
         item.drug.id === drugId 
           ? { ...item, quantity: newQuantity }
@@ -86,11 +87,17 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       customerName: customerName || undefined
     };
 
-    // Update stock
+    // Update stock amounts and inventory
     const updatedDrugs = drugs.map(drug => {
       const cartItem = cart.find(item => item.drug.id === drug.id);
       if (cartItem) {
-        return { ...drug, stock: drug.stock - cartItem.quantity };
+        const newInventory = drug.inventory + cartItem.quantity;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        return { 
+          ...drug, 
+          inventory: newInventory,
+          stockAmount: newStockAmount
+        };
       }
       return drug;
     });
@@ -104,6 +111,86 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
     printReceipt(transaction);
   };
 
+  const editTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    // Restore stock when editing
+    const updatedDrugs = drugs.map(drug => {
+      const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
+      if (transactionItem) {
+        const newInventory = drug.inventory - transactionItem.quantity;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        return { 
+          ...drug, 
+          inventory: newInventory,
+          stockAmount: newStockAmount
+        };
+      }
+      return drug;
+    });
+    setDrugs(updatedDrugs);
+    setCart(transaction.items.map(item => ({ drug: item.drug, quantity: item.quantity })));
+    setCustomerName(transaction.customerName || '');
+  };
+
+  const updateTransaction = () => {
+    if (!editingTransaction || cart.length === 0) return;
+
+    const updatedTransaction: Transaction = {
+      ...editingTransaction,
+      items: cart.map(item => ({
+        drug: item.drug,
+        quantity: item.quantity,
+        totalPrice: item.drug.finalPrice * item.quantity
+      })),
+      totalAmount: getTotalAmount(),
+      customerName: customerName || undefined
+    };
+
+    // Update stock amounts
+    const updatedDrugs = drugs.map(drug => {
+      const cartItem = cart.find(item => item.drug.id === drug.id);
+      if (cartItem) {
+        const newInventory = drug.inventory + cartItem.quantity;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        return { 
+          ...drug, 
+          inventory: newInventory,
+          stockAmount: newStockAmount
+        };
+      }
+      return drug;
+    });
+
+    setDrugs(updatedDrugs);
+    setTransactions(transactions.map(t => t.id === editingTransaction.id ? updatedTransaction : t));
+    setCart([]);
+    setCustomerName('');
+    setEditingTransaction(null);
+  };
+
+  const deleteTransaction = (transactionId: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (!transaction) return;
+
+    // Restore stock when deleting
+    const updatedDrugs = drugs.map(drug => {
+      const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
+      if (transactionItem) {
+        const newInventory = drug.inventory - transactionItem.quantity;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        return { 
+          ...drug, 
+          inventory: newInventory,
+          stockAmount: newStockAmount
+        };
+      }
+      return drug;
+    });
+
+    setDrugs(updatedDrugs);
+    setTransactions(transactions.filter(t => t.id !== transactionId));
+  };
+
   const printReceipt = (transaction: Transaction) => {
     const receiptWindow = window.open('', '_blank');
     if (!receiptWindow) return;
@@ -114,40 +201,73 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
         <head>
           <title>Receipt - ${transaction.id}</title>
           <style>
-            body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .item { display: flex; justify-content: space-between; margin-bottom: 10px; }
-            .total { border-top: 2px solid #000; padding-top: 10px; margin-top: 20px; font-weight: bold; }
-            @media print { body { margin: 0; } }
+            @page { 
+              size: 58mm 80mm; 
+              margin: 2mm; 
+            }
+            body { 
+              font-family: monospace; 
+              font-size: 8px; 
+              width: 54mm; 
+              margin: 0; 
+              padding: 2mm;
+              background: white;
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 1px dashed #000; 
+              padding-bottom: 3px; 
+              margin-bottom: 5px; 
+            }
+            .item { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 2px;
+              font-size: 7px;
+            }
+            .total { 
+              border-top: 1px dashed #000; 
+              padding-top: 3px; 
+              margin-top: 5px; 
+              font-weight: bold; 
+            }
+            .footer {
+              text-align: center; 
+              margin-top: 5px; 
+              font-size: 6px;
+            }
           </style>
         </head>
         <body>
           <div class="header">
-            <h2>PharmaCare Pharmacy</h2>
-            <p>Receipt #${transaction.id}</p>
-            <p>${transaction.date.toLocaleString()}</p>
-            ${transaction.customerName ? `<p>Customer: ${transaction.customerName}</p>` : ''}
+            <div style="font-weight: bold;">PharmaCare</div>
+            <div>Receipt #${transaction.id}</div>
+            <div>${transaction.date.toLocaleString()}</div>
+            ${transaction.customerName ? `<div>Customer: ${transaction.customerName}</div>` : ''}
           </div>
           
           <div class="items">
             ${transaction.items.map(item => `
               <div class="item">
-                <span>${item.drug.name}</span>
-                <span>${item.quantity} x $${item.drug.finalPrice.toFixed(2)} = $${item.totalPrice.toFixed(2)}</span>
+                <div style="flex: 1;">${item.drug.name}</div>
+              </div>
+              <div class="item">
+                <span>${item.quantity} x $${item.drug.finalPrice.toFixed(2)}</span>
+                <span>$${item.totalPrice.toFixed(2)}</span>
               </div>
             `).join('')}
           </div>
           
           <div class="total">
             <div class="item">
-              <span>Total Amount:</span>
+              <span>TOTAL:</span>
               <span>$${transaction.totalAmount.toFixed(2)}</span>
             </div>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; font-size: 12px;">
-            <p>Thank you for your purchase!</p>
-            <p>Have a great day!</p>
+          <div class="footer">
+            <div>Thank you!</div>
+            <div>Have a great day!</div>
           </div>
         </body>
       </html>
@@ -164,7 +284,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <ShoppingCart size={24} />
-            <span>New Sale</span>
+            <span>{editingTransaction ? 'Edit Sale' : 'New Sale'}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -180,9 +300,9 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
                 <SelectValue placeholder="Select Drug" />
               </SelectTrigger>
               <SelectContent>
-                {drugs.filter(drug => drug.stock > 0).map(drug => (
+                {drugs.filter(drug => drug.stockAmount > 0).map(drug => (
                   <SelectItem key={drug.id} value={drug.id}>
-                    {drug.name} - ${drug.finalPrice.toFixed(2)} (Stock: {drug.stock})
+                    {drug.name} - ${drug.finalPrice.toFixed(2)} (Stock: {drug.stockAmount})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -212,7 +332,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
                     variant="outline" 
                     size="sm" 
                     onClick={() => updateQuantity(item.drug.id, item.quantity + 1)}
-                    disabled={item.quantity >= item.drug.stock}
+                    disabled={item.quantity >= item.drug.stockAmount}
                   >
                     <Plus size={16} />
                   </Button>
@@ -229,14 +349,28 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
             </div>
           </div>
 
-          <Button 
-            className="w-full bg-green-600 hover:bg-green-700" 
-            onClick={processTransaction}
-            disabled={cart.length === 0}
-          >
-            <Printer size={20} className="mr-2" />
-            Complete Sale & Print Receipt
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              className="flex-1 bg-green-600 hover:bg-green-700" 
+              onClick={editingTransaction ? updateTransaction : processTransaction}
+              disabled={cart.length === 0}
+            >
+              <Printer size={20} className="mr-2" />
+              {editingTransaction ? 'Update Sale' : 'Complete Sale'} & Print Receipt
+            </Button>
+            {editingTransaction && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setEditingTransaction(null);
+                  setCart([]);
+                  setCustomerName('');
+                }}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -259,14 +393,30 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
                   </div>
                   <div className="text-right">
                     <p className="font-bold">${transaction.totalAmount.toFixed(2)}</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => printReceipt(transaction)}
-                      className="mt-1"
-                    >
-                      <Printer size={16} />
-                    </Button>
+                    <div className="flex space-x-1 mt-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => printReceipt(transaction)}
+                      >
+                        <Printer size={16} />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => editTransaction(transaction)}
+                      >
+                        <Edit size={16} />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => deleteTransaction(transaction.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
