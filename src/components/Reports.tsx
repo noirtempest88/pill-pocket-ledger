@@ -56,6 +56,7 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
       'Transaction ID',
       'Customer',
       'Drug Name',
+      'Batch Number',
       'Packaging Unit',
       'Quantity',
       'Unit Price',
@@ -73,9 +74,10 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
           transaction.id,
           transaction.customerName || 'Walk-in',
           item.drug.name,
+          item.drug.batchNumber,
           item.drug.packagingUnit,
           item.quantity.toString(),
-          item.drug.finalPrice.toFixed(2),
+          item.drug.priceNetTax.toFixed(2),
           item.totalPrice.toFixed(2),
           (item.drug.basePrice * item.quantity).toFixed(2),
           profit.toFixed(2)
@@ -94,22 +96,36 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
     const headers = [
       'Drug Name',
       'Packaging Unit',
+      'Batch Number',
       'Category',
-      'Base Price',
-      'Net Price',
-      'Final Price (with Tax)',
+      'Initial Stock',
+      'Receipt',
+      'Inventory',
+      'Expired/Damaged',
+      'Damaged Returns',
       'Current Stock',
+      'Manufacturer',
+      'Base Price',
+      'Price + Net',
+      'Price + Net + Tax',
       'Stock Status'
     ];
 
     const rows = drugs.map(drug => [
       drug.name,
       drug.packagingUnit,
+      drug.batchNumber,
       drug.category,
-      drug.basePrice.toFixed(2),
-      drug.netPrice.toFixed(2),
-      drug.finalPrice.toFixed(2),
+      drug.initialStock.toString(),
+      drug.receipt.toString(),
+      drug.inventory.toString(),
+      drug.expiredDamaged.toString(),
+      drug.damagedReturns.toString(),
       drug.stockAmount.toString(),
+      drug.factoryManufacturer,
+      drug.basePrice.toFixed(2),
+      drug.priceNet.toFixed(2),
+      drug.priceNetTax.toFixed(2),
       drug.stockAmount < 10 ? 'Low Stock' : drug.stockAmount < 5 ? 'Critical' : 'In Stock'
     ]);
 

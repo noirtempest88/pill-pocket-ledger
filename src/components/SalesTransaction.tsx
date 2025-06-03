@@ -68,7 +68,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + (item.drug.finalPrice * item.quantity), 0);
+    return cart.reduce((total, item) => total + (item.drug.priceNetTax * item.quantity), 0);
   };
 
   const processTransaction = () => {
@@ -80,7 +80,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       items: cart.map(item => ({
         drug: item.drug,
         quantity: item.quantity,
-        totalPrice: item.drug.finalPrice * item.quantity
+        totalPrice: item.drug.priceNetTax * item.quantity
       })),
       totalAmount: getTotalAmount(),
       customerName: customerName || undefined
@@ -91,7 +91,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       const cartItem = cart.find(item => item.drug.id === drug.id);
       if (cartItem) {
         const newInventory = drug.inventory + cartItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
         return { 
           ...drug, 
           inventory: newInventory,
@@ -117,7 +117,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
       if (transactionItem) {
         const newInventory = drug.inventory - transactionItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
         return { 
           ...drug, 
           inventory: newInventory,
@@ -139,7 +139,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       items: cart.map(item => ({
         drug: item.drug,
         quantity: item.quantity,
-        totalPrice: item.drug.finalPrice * item.quantity
+        totalPrice: item.drug.priceNetTax * item.quantity
       })),
       totalAmount: getTotalAmount(),
       customerName: customerName || undefined
@@ -150,7 +150,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       const cartItem = cart.find(item => item.drug.id === drug.id);
       if (cartItem) {
         const newInventory = drug.inventory + cartItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
         return { 
           ...drug, 
           inventory: newInventory,
@@ -176,7 +176,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
       if (transactionItem) {
         const newInventory = drug.inventory - transactionItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged;
+        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
         return { 
           ...drug, 
           inventory: newInventory,
@@ -251,7 +251,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
                 <div style="flex: 1;">${item.drug.name}</div>
               </div>
               <div class="item">
-                <span>${item.quantity} x $${item.drug.finalPrice.toFixed(2)}</span>
+                <span>${item.quantity} x $${item.drug.priceNetTax.toFixed(2)}</span>
                 <span>$${item.totalPrice.toFixed(2)}</span>
               </div>
             `).join('')}
@@ -301,7 +301,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
               <SelectContent>
                 {drugs.filter(drug => drug.stockAmount > 0).map(drug => (
                   <SelectItem key={drug.id} value={drug.id}>
-                    {drug.name} - ${drug.finalPrice.toFixed(2)} (Stock: {drug.stockAmount})
+                    {drug.name} - ${drug.priceNetTax.toFixed(2)} (Stock: {drug.stockAmount})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -316,7 +316,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
               <div key={item.drug.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
                   <p className="font-medium">{item.drug.name}</p>
-                  <p className="text-sm text-gray-600">${item.drug.finalPrice.toFixed(2)} each</p>
+                  <p className="text-sm text-gray-600">${item.drug.priceNetTax.toFixed(2)} each</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button 
@@ -335,7 +335,7 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
                   >
                     <Plus size={16} />
                   </Button>
-                  <span className="w-20 text-right">${(item.drug.finalPrice * item.quantity).toFixed(2)}</span>
+                  <span className="w-20 text-right">${(item.drug.priceNetTax * item.quantity).toFixed(2)}</span>
                 </div>
               </div>
             ))}

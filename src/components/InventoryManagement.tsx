@@ -9,15 +9,17 @@ export interface Drug {
   id: string;
   name: string;
   packagingUnit: string;
+  batchNumber: string;
   initialStock: number;
   receipt: number;
   inventory: number;
   expiredDamaged: number;
   stockAmount: number;
   factoryManufacturer: string;
+  damagedReturns: number;
   basePrice: number;
-  netPrice: number;
-  finalPrice: number;
+  priceNet: number;
+  priceNetTax: number;
   category: string;
 }
 
@@ -33,57 +35,64 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
   const [formData, setFormData] = useState({
     name: '',
     packagingUnit: '',
+    batchNumber: '',
     initialStock: '',
     receipt: '',
     inventory: '',
     expiredDamaged: '',
     factoryManufacturer: '',
+    damagedReturns: '',
     basePrice: '',
     category: ''
   });
 
   const TAX_RATE = 0.1; // 10% tax
+  const NET_MARKUP = 0.2; // 20% markup
 
   const calculatePrices = (basePrice: number) => {
-    const netPrice = basePrice * 1.2; // 20% markup
-    const finalPrice = netPrice * (1 + TAX_RATE);
-    return { netPrice, finalPrice };
+    const priceNet = basePrice * (1 + NET_MARKUP);
+    const priceNetTax = priceNet * (1 + TAX_RATE);
+    return { priceNet, priceNetTax };
   };
 
-  const calculateStockAmount = (initialStock: number, receipt: number, inventory: number, expiredDamaged: number) => {
-    return initialStock + receipt - inventory - expiredDamaged;
+  const calculateStockAmount = (initialStock: number, receipt: number, inventory: number, expiredDamaged: number, damagedReturns: number) => {
+    return initialStock + receipt - inventory - expiredDamaged - damagedReturns;
   };
 
   const filteredDrugs = drugs.filter(drug =>
     drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     drug.packagingUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
     drug.factoryManufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    drug.category.toLowerCase().includes(searchTerm.toLowerCase())
+    drug.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    drug.batchNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const basePrice = parseFloat(formData.basePrice);
-    const { netPrice, finalPrice } = calculatePrices(basePrice);
+    const { priceNet, priceNetTax } = calculatePrices(basePrice);
     const initialStock = parseInt(formData.initialStock);
     const receipt = parseInt(formData.receipt);
     const inventory = parseInt(formData.inventory);
     const expiredDamaged = parseInt(formData.expiredDamaged);
-    const stockAmount = calculateStockAmount(initialStock, receipt, inventory, expiredDamaged);
+    const damagedReturns = parseInt(formData.damagedReturns);
+    const stockAmount = calculateStockAmount(initialStock, receipt, inventory, expiredDamaged, damagedReturns);
     
     const drugData = {
       id: editingDrug?.id || Date.now().toString(),
       name: formData.name,
       packagingUnit: formData.packagingUnit,
+      batchNumber: formData.batchNumber,
       initialStock,
       receipt,
       inventory,
       expiredDamaged,
       stockAmount,
       factoryManufacturer: formData.factoryManufacturer,
+      damagedReturns,
       basePrice,
-      netPrice,
-      finalPrice,
+      priceNet,
+      priceNetTax,
       category: formData.category
     };
 
@@ -97,11 +106,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     setFormData({ 
       name: '', 
       packagingUnit: '', 
+      batchNumber: '',
       initialStock: '', 
       receipt: '', 
       inventory: '', 
       expiredDamaged: '', 
       factoryManufacturer: '', 
+      damagedReturns: '',
       basePrice: '', 
       category: '' 
     });
@@ -113,11 +124,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     setFormData({
       name: drug.name,
       packagingUnit: drug.packagingUnit,
+      batchNumber: drug.batchNumber,
       initialStock: drug.initialStock.toString(),
       receipt: drug.receipt.toString(),
       inventory: drug.inventory.toString(),
       expiredDamaged: drug.expiredDamaged.toString(),
       factoryManufacturer: drug.factoryManufacturer,
+      damagedReturns: drug.damagedReturns.toString(),
       basePrice: drug.basePrice.toString(),
       category: drug.category
     });
@@ -168,6 +181,12 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 required
               />
               <Input
+                placeholder="Batch Number"
+                value={formData.batchNumber}
+                onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
+                required
+              />
+              <Input
                 placeholder="Initial Stock"
                 type="number"
                 value={formData.initialStock}
@@ -193,6 +212,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 type="number"
                 value={formData.expiredDamaged}
                 onChange={(e) => setFormData({ ...formData, expiredDamaged: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Damaged Returns"
+                type="number"
+                value={formData.damagedReturns}
+                onChange={(e) => setFormData({ ...formData, damagedReturns: e.target.value })}
                 required
               />
               <Input
@@ -228,11 +254,13 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                     setFormData({ 
                       name: '', 
                       packagingUnit: '', 
+                      batchNumber: '',
                       initialStock: '', 
                       receipt: '', 
                       inventory: '', 
                       expiredDamaged: '', 
                       factoryManufacturer: '', 
+                      damagedReturns: '',
                       basePrice: '', 
                       category: '' 
                     });
@@ -254,15 +282,17 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drug Name</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packaging Unit</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Number</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initial Stock</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expired/Damaged</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Amount</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Damaged Returns</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net + Tax</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price + Net</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price + Net + Tax</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -271,15 +301,17 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                   <tr key={drug.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{drug.name}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.packagingUnit}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.batchNumber}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.initialStock}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.receipt}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.inventory}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.expiredDamaged}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.stockAmount}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.factoryManufacturer}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.damagedReturns}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.basePrice.toFixed(2)}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.netPrice.toFixed(2)}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.finalPrice.toFixed(2)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.priceNet.toFixed(2)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.priceNetTax.toFixed(2)}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(drug)}>
