@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,7 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
       'Transaction ID',
       'Customer',
       'Drug Name',
-      'Product',
+      'Packaging Unit',
       'Quantity',
       'Unit Price',
       'Total Price',
@@ -74,7 +73,7 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
           transaction.id,
           transaction.customerName || 'Walk-in',
           item.drug.name,
-          item.drug.product,
+          item.drug.packagingUnit,
           item.quantity.toString(),
           item.drug.finalPrice.toFixed(2),
           item.totalPrice.toFixed(2),
@@ -94,7 +93,7 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
   const exportInventoryReport = () => {
     const headers = [
       'Drug Name',
-      'Product',
+      'Packaging Unit',
       'Category',
       'Base Price',
       'Net Price',
@@ -105,13 +104,13 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
 
     const rows = drugs.map(drug => [
       drug.name,
-      drug.product,
+      drug.packagingUnit,
       drug.category,
       drug.basePrice.toFixed(2),
       drug.netPrice.toFixed(2),
       drug.finalPrice.toFixed(2),
-      drug.stock.toString(),
-      drug.stock < 10 ? 'Low Stock' : drug.stock < 5 ? 'Critical' : 'In Stock'
+      drug.stockAmount.toString(),
+      drug.stockAmount < 10 ? 'Low Stock' : drug.stockAmount < 5 ? 'Critical' : 'In Stock'
     ]);
 
     const csvContent = [headers, ...rows].map(row => 
@@ -306,7 +305,7 @@ const Reports = ({ transactions, drugs }: ReportsProps) => {
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <p className="text-2xl font-bold text-purple-600">
-                {drugs.filter(drug => drug.stock < 10).length}
+                {drugs.filter(drug => drug.stockAmount < 10).length}
               </p>
               <p className="text-sm text-gray-600">Low Stock Alerts</p>
             </div>
