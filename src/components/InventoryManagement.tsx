@@ -38,7 +38,6 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     batchNumber: '',
     initialStock: '',
     receipt: '',
-    inventory: '',
     expiredDamaged: '',
     factoryManufacturer: '',
     damagedReturns: '',
@@ -55,8 +54,12 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     return { priceNet, priceNetTax };
   };
 
-  const calculateStockAmount = (initialStock: number, receipt: number, inventory: number, expiredDamaged: number, damagedReturns: number) => {
-    return initialStock + receipt - inventory - expiredDamaged - damagedReturns;
+  const calculateInventoryAndStock = (initialStock: number, receipt: number, expiredDamaged: number, damagedReturns: number, soldInventory: number = 0) => {
+    // Inventory = initial stock + receipt
+    const inventory = initialStock + receipt;
+    // Stock amount = inventory - sold items - expired/damaged - damaged returns
+    const stockAmount = inventory - soldInventory - expiredDamaged - damagedReturns;
+    return { inventory, stockAmount };
   };
 
   const filteredDrugs = drugs.filter(drug =>
@@ -73,10 +76,14 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
     const { priceNet, priceNetTax } = calculatePrices(basePrice);
     const initialStock = parseInt(formData.initialStock);
     const receipt = parseInt(formData.receipt);
-    const inventory = parseInt(formData.inventory);
     const expiredDamaged = parseInt(formData.expiredDamaged);
     const damagedReturns = parseInt(formData.damagedReturns);
-    const stockAmount = calculateStockAmount(initialStock, receipt, inventory, expiredDamaged, damagedReturns);
+    
+    // For existing drugs, preserve sold inventory count
+    const existingDrug = editingDrug;
+    const soldInventory = existingDrug ? (existingDrug.initialStock + existingDrug.receipt - existingDrug.stockAmount - existingDrug.expiredDamaged - existingDrug.damagedReturns) : 0;
+    
+    const { inventory, stockAmount } = calculateInventoryAndStock(initialStock, receipt, expiredDamaged, damagedReturns, soldInventory);
     
     const drugData = {
       id: editingDrug?.id || Date.now().toString(),
@@ -109,7 +116,6 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
       batchNumber: '',
       initialStock: '', 
       receipt: '', 
-      inventory: '', 
       expiredDamaged: '', 
       factoryManufacturer: '', 
       damagedReturns: '',
@@ -127,7 +133,6 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
       batchNumber: drug.batchNumber,
       initialStock: drug.initialStock.toString(),
       receipt: drug.receipt.toString(),
-      inventory: drug.inventory.toString(),
       expiredDamaged: drug.expiredDamaged.toString(),
       factoryManufacturer: drug.factoryManufacturer,
       damagedReturns: drug.damagedReturns.toString(),
@@ -194,17 +199,10 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                 required
               />
               <Input
-                placeholder="Receipt"
+                placeholder="Receipt (adds to stock)"
                 type="number"
                 value={formData.receipt}
                 onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
-                required
-              />
-              <Input
-                placeholder="Inventory"
-                type="number"
-                value={formData.inventory}
-                onChange={(e) => setFormData({ ...formData, inventory: e.target.value })}
                 required
               />
               <Input
@@ -257,7 +255,6 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                       batchNumber: '',
                       initialStock: '', 
                       receipt: '', 
-                      inventory: '', 
                       expiredDamaged: '', 
                       factoryManufacturer: '', 
                       damagedReturns: '',
@@ -303,12 +300,12 @@ const InventoryManagement = ({ drugs, setDrugs }: InventoryManagementProps) => {
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.packagingUnit}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.batchNumber}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.initialStock}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.receipt}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600">+{drug.receipt}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.inventory}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.expiredDamaged}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-red-600">{drug.expiredDamaged}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.stockAmount}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.factoryManufacturer}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{drug.damagedReturns}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-red-600">{drug.damagedReturns}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.basePrice.toFixed(2)}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.priceNet.toFixed(2)}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${drug.priceNetTax.toFixed(2)}</td>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import InventoryManagement, { Drug } from '@/components/InventoryManagement';
@@ -15,11 +16,11 @@ const Index = () => {
       batchNumber: 'PCM-2024-001',
       initialStock: 200,
       receipt: 50,
-      inventory: 100,
+      inventory: 250, // initialStock + receipt = 200 + 50
       expiredDamaged: 10,
-      stockAmount: 125,
+      stockAmount: 215, // inventory - sold(25) - expired(10) - returns(0) = 250 - 25 - 10 - 0
       factoryManufacturer: 'PharmaCorp Ltd',
-      damagedReturns: 15,
+      damagedReturns: 0,
       basePrice: 5.00,
       priceNet: 6.00,
       priceNetTax: 6.60,
@@ -32,11 +33,11 @@ const Index = () => {
       batchNumber: 'AMX-2024-002',
       initialStock: 150,
       receipt: 30,
-      inventory: 50,
+      inventory: 180, // initialStock + receipt = 150 + 30
       expiredDamaged: 5,
-      stockAmount: 115,
+      stockAmount: 160, // inventory - sold(15) - expired(5) - returns(0) = 180 - 15 - 5 - 0
       factoryManufacturer: 'MediCure Industries',
-      damagedReturns: 10,
+      damagedReturns: 0,
       basePrice: 12.00,
       priceNet: 14.40,
       priceNetTax: 15.84,
@@ -49,11 +50,11 @@ const Index = () => {
       batchNumber: 'VTC-2024-003',
       initialStock: 100,
       receipt: 25,
-      inventory: 75,
+      inventory: 125, // initialStock + receipt = 100 + 25
       expiredDamaged: 2,
-      stockAmount: 43,
+      stockAmount: 118, // inventory - sold(5) - expired(2) - returns(0) = 125 - 5 - 2 - 0
       factoryManufacturer: 'HealthMax Pharma',
-      damagedReturns: 5,
+      damagedReturns: 0,
       basePrice: 8.00,
       priceNet: 9.60,
       priceNetTax: 10.56,

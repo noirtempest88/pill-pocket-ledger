@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ShoppingCart, Printer, Plus, Minus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,16 +87,14 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       customerName: customerName || undefined
     };
 
-    // Update stock amounts and inventory
+    // Update stock amounts - reduce stockAmount when items are sold
     const updatedDrugs = drugs.map(drug => {
       const cartItem = cart.find(item => item.drug.id === drug.id);
       if (cartItem) {
-        const newInventory = drug.inventory + cartItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
+        const newStockAmount = drug.stockAmount - cartItem.quantity;
         return { 
           ...drug, 
-          inventory: newInventory,
-          stockAmount: newStockAmount
+          stockAmount: Math.max(0, newStockAmount)
         };
       }
       return drug;
@@ -112,15 +111,13 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
 
   const editTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    // Restore stock when editing
+    // Restore stock when editing (add back the sold quantities)
     const updatedDrugs = drugs.map(drug => {
       const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
       if (transactionItem) {
-        const newInventory = drug.inventory - transactionItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
+        const newStockAmount = drug.stockAmount + transactionItem.quantity;
         return { 
           ...drug, 
-          inventory: newInventory,
           stockAmount: newStockAmount
         };
       }
@@ -145,16 +142,14 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
       customerName: customerName || undefined
     };
 
-    // Update stock amounts
+    // Update stock amounts - subtract new quantities
     const updatedDrugs = drugs.map(drug => {
       const cartItem = cart.find(item => item.drug.id === drug.id);
       if (cartItem) {
-        const newInventory = drug.inventory + cartItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
+        const newStockAmount = drug.stockAmount - cartItem.quantity;
         return { 
           ...drug, 
-          inventory: newInventory,
-          stockAmount: newStockAmount
+          stockAmount: Math.max(0, newStockAmount)
         };
       }
       return drug;
@@ -171,15 +166,13 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
     const transaction = transactions.find(t => t.id === transactionId);
     if (!transaction) return;
 
-    // Restore stock when deleting
+    // Restore stock when deleting (add back the sold quantities)
     const updatedDrugs = drugs.map(drug => {
       const transactionItem = transaction.items.find(item => item.drug.id === drug.id);
       if (transactionItem) {
-        const newInventory = drug.inventory - transactionItem.quantity;
-        const newStockAmount = drug.initialStock + drug.receipt - newInventory - drug.expiredDamaged - drug.damagedReturns;
+        const newStockAmount = drug.stockAmount + transactionItem.quantity;
         return { 
           ...drug, 
-          inventory: newInventory,
           stockAmount: newStockAmount
         };
       }
@@ -201,45 +194,45 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
           <title>Receipt - ${transaction.id}</title>
           <style>
             @page { 
-              size: 58mm 80mm; 
-              margin: 2mm; 
+              size: 58mm 30mm; 
+              margin: 1mm; 
             }
             body { 
               font-family: monospace; 
-              font-size: 8px; 
-              width: 54mm; 
+              font-size: 6px; 
+              width: 56mm; 
               margin: 0; 
-              padding: 2mm;
+              padding: 1mm;
               background: white;
             }
             .header { 
               text-align: center; 
               border-bottom: 1px dashed #000; 
-              padding-bottom: 3px; 
-              margin-bottom: 5px; 
+              padding-bottom: 2px; 
+              margin-bottom: 3px; 
             }
             .item { 
               display: flex; 
               justify-content: space-between; 
-              margin-bottom: 2px;
-              font-size: 7px;
+              margin-bottom: 1px;
+              font-size: 5px;
             }
             .total { 
               border-top: 1px dashed #000; 
-              padding-top: 3px; 
-              margin-top: 5px; 
+              padding-top: 2px; 
+              margin-top: 3px; 
               font-weight: bold; 
             }
             .footer {
               text-align: center; 
-              margin-top: 5px; 
-              font-size: 6px;
+              margin-top: 2px; 
+              font-size: 4px;
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <div style="font-weight: bold;">Selokgondang Pharmacy</div>
+            <div style="font-weight: bold; font-size: 7px;">Selokgondang Pharmacy</div>
             <div>Receipt #${transaction.id}</div>
             <div>${transaction.date.toLocaleString()}</div>
             ${transaction.customerName ? `<div>Customer: ${transaction.customerName}</div>` : ''}
@@ -266,7 +259,6 @@ const SalesTransaction = ({ drugs, transactions, setTransactions, setDrugs }: Sa
           
           <div class="footer">
             <div>Thank you!</div>
-            <div>Have a great day!</div>
           </div>
         </body>
       </html>
